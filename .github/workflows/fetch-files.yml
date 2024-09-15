@@ -83,7 +83,7 @@ jobs:
         git commit -m "Add YAML files for tag ${{ env.TAG }}"
         
         # Push changes to the branch
-        git push https://x-access-token:${{ secrets.PAT }}@github.com/olamilekan000/drump-crds.git "release-${{ env.TAG }}"
+        git push https://x-access-token:${{ secrets.PAT }}@github.com/olamilekan000/dump-crds.git "release-${{ env.TAG }}"
 
     - name: Install GitHub CLI
       run: |

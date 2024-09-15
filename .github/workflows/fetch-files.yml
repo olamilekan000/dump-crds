@@ -55,6 +55,27 @@ jobs:
       run: |
         ls -R ${{ github.workspace }}/releases/download/${{ env.TAG }}
 
+    - name: Fetch user details
+      id: fetch_user
+      run: |
+        # Extract the commit SHA from the event payload
+        COMMIT_SHA=${{ github.event.client_payload.commit_sha }}
+        
+        # Fetch the commit details
+        USER_DATA=$(curl -H "Authorization: Bearer ${{ secrets.PAT }}" \
+                      -s "${{ env.BASE_URL }}/commits/${COMMIT_SHA}")
+        
+        # Print USER_DATA for debugging
+        echo "$USER_DATA"
+        
+        # Extract user name and email
+        USER_NAME=$(echo "$USER_DATA" | jq -r '.author.login')
+        USER_EMAIL=$(echo "$USER_DATA" | jq -r '.commit.author.email')
+        
+        # Export the values as environment variables
+        echo "USER_NAME=${USER_NAME}" >> $GITHUB_ENV
+        echo "USER_EMAIL=${USER_EMAIL}" >> $GITHUB_ENV
+
     - name: Commit and push changes
       run: |        
         # Add changes and commit

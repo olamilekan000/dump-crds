@@ -77,7 +77,11 @@ jobs:
         echo "USER_EMAIL=${USER_EMAIL}" >> $GITHUB_ENV
 
     - name: Commit and push changes
-      run: |        
+      run: |
+        # Configure Git
+        git config --global user.name ${{ env.USER_NAME }}
+        git config --global user.email ${{ env.USER_EMAIL }}
+        
         # Add changes and commit
         git add .
         git status

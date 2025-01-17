@@ -21,11 +21,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Determine Source Branch
+        id: source_branch
+        run: |
+          # For pull requests, use the source branch name
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "SOURCE_BRANCH=${{ github.head_ref }}" >> $GITHUB_ENV
+          else
+            # For direct pushes, use the current branch
+            echo "SOURCE_BRANCH=$(git rev-parse --abbrev-ref HEAD)" >> $GITHUB_ENV
+          fi
+
       - name: Check for Changes in helm/crd/all.yaml
         id: check_changes
         run: |
           git fetch origin master
-          if git --no-pager diff add-workspace..origin/master --name-only| grep -q "helm/crd/all.yaml"; then
+          if git --no-pager diff ${{ env.SOURCE_BRANCH }}..master --name-only | grep -q "helm/crd/all.yaml"; then
             echo "File helm/crd/all.yaml was changed."
             echo "CHANGED=true" >> $GITHUB_ENV
           else

@@ -79,6 +79,7 @@ jobs:
 
       - name: Download Helm artifact directly into the component directory
         uses: actions/download-artifact@v4
+        if: env.CHANGED == 'true'
         with:
           name: helm
           path: .          

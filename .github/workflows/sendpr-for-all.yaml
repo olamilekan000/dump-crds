@@ -20,7 +20,9 @@ jobs:
         id: check_changes
         run: |
           ls
-          if git --no-pager diff --name-only | grep -q "^helm/crd/all.yaml$"; then
+          git --no-pager diff --name-only 
+          if git --no-pager diff --name-only | grep -q "helm/crd/all.yaml"
+          if git --no-pager diff --name-only | grep -q "helm/crd/all.yaml"; then
             echo "changes=true" >> $GITHUB_ENV
           else
             echo "changes=false" >> $GITHUB_ENV

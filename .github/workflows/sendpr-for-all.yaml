@@ -8,12 +8,12 @@ on:
     branches:
       - master
 
-env:
-  CHANGED: false
-
 jobs:
   check-specific-file:
     runs-on: ubuntu-latest
+
+    outputs:
+      changed: ${{ steps.check_changes.outputs.changed }}
 
     steps:
       - name: Checkout Code
@@ -39,16 +39,16 @@ jobs:
           git fetch origin ${{ env.SOURCE_BRANCH }}
           if git --no-pager log -n 1 origin/${{ env.SOURCE_BRANCH }} --name-only --pretty=format: | grep -q "helm/crd/all.yaml"; then
             echo "File helm/crd/all.yaml was changed."
-            echo "CHANGED=true" >> $GITHUB_ENV
+            echo "::set-output name=changed::true"
           else
             echo "No changes in helm/crd/all.yaml."
-            echo "CHANGED=false" >> $GITHUB_ENV
+            echo "::set-output name=changed::false"
           fi
 
   process-changes:
     needs: check-specific-file
     runs-on: ubuntu-latest
-    if: env.CHANGED == 'true'
+    if: needs.check-specific-file.outputs.changed == 'true'
 
     steps:
       - name: Checkout other repository

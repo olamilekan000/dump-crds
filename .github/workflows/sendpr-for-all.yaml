@@ -96,7 +96,7 @@ jobs:
       - name: Create a pull request
         run: |
           gh pr create --base master --head ${{ env.BRANCH_NAME }} \
-            --title "Update Tyk Operator CRD for version ${{ env.BRANCH_NAME }}" \
+            --title "All.yam changed ${{ env.BRANCH_NAME }}" \
             --body "Changes include CRD updates from Tyk Operator for ${{ env.BRANCH_NAME }}."
         env:
           GITHUB_TOKEN: ${{ secrets.PAT }}

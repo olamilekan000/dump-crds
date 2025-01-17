@@ -96,7 +96,7 @@ jobs:
       - name: Create a pull request
         if: env.CHANGED == 'true'
         run: |
-          gh pr create --base main --head file-changed-${{ env.TAG }}-${{ env.SHORT_UID }} \
+          gh pr create --base master --head file-changed-${{ env.TAG }}-${{ env.SHORT_UID }} \
             --title "Update Tyk Operator CRD for version file-changed-${{ env.TAG }}-${{ env.SHORT_UID }}" \
             --body "Changes include CRD updates from Tyk Operator for file-changed-${{ env.TAG }}-${{ env.SHORT_UID }}."
         env:

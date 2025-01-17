@@ -691,7 +691,7 @@ webhooks:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: busybox-pods
+  name: busybox-pod1
   labels:
     app: busybox
 spec:

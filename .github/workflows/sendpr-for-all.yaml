@@ -10,49 +10,81 @@ on:
 
 env:
   CHANGED: false
+
 jobs:
   check-specific-file:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Check for Changes in helm/crd/all.yaml
+      - name: Get Source Branch Name
         id: get_source_branch
         run: |
           if [[ $GITHUB_EVENT_NAME == "pull_request" ]]; then
-            # For PR event, we can directly use the source branch
             echo "SOURCE_BRANCH=${{ github.head_ref }}" >> $GITHUB_ENV
           elif [[ $GITHUB_EVENT_NAME == "push" ]]; then
-            # For push event (merge), get the merge commit and extract the source branch
-            # Find the merge commit hash
             MERGE_COMMIT=$(git log -1 --merges --pretty=%H)
-            # Extract the source branch from the merge commit message and trim repository name
             SOURCE_BRANCH=$(git show -s --pretty=%B $MERGE_COMMIT | grep -oP '(?<=from )\S+' | sed 's/^[^/]*\///')
             echo "SOURCE_BRANCH=${SOURCE_BRANCH}" >> $GITHUB_ENV
           fi
-          echo "Source branch is: $SOURCE_BRANCH"          
 
-  process-changes:
-    needs: check-specific-file
-    runs-on: ubuntu-latest
-    if: needs.check-specific-file.outputs.CHANGED == 'true'
-    steps:
+      - name: Check for Changes in helm/crd/all.yaml
+        id: check_changes
+        run: |
+          echo "Checking for changes between ${{ env.SOURCE_BRANCH }} and master"
+          git fetch origin ${{ env.SOURCE_BRANCH }}
+          if git --no-pager log -n 1 origin/${{ env.SOURCE_BRANCH }} --name-only --pretty=format: | grep -q "helm/crd/all.yaml"; then
+            echo "File helm/crd/all.yaml was changed."
+            echo "CHANGED=true" >> $GITHUB_ENV
+          else
+            echo "No changes in helm/crd/all.yaml."
+            echo "CHANGED=false" >> $GITHUB_ENV
+          fi
+
+      - name: Copy Helm chart to a temporary directory
+        if: env.CHANGED == 'true'
+        run: |
+          mkdir -p /tmp/helm
+          cp -r "${GITHUB_WORKSPACE}/helm/crd/all.yaml"* /tmp/helm        
+
+      - name: Upload Helm Chart
+        if: env.CHANGED == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm
+          path: /tmp/helm
+
+      - name: Print Message
+        if: env.CHANGED == 'true'
+        run: |
+          echo "Changes detected in helm/crd/all.yaml"
+
       - name: Checkout other repository
+        if: env.CHANGED == 'true'
         uses: actions/checkout@v4
         with: 
           repository: olamilekan000/leased-based-le
           token: ${{ secrets.PAT }}
 
       - name: Create and checkout new branch
+        if: env.CHANGED == 'true'
         run: |
           SHORT_UID=$(uuidgen | cut -c1-8)
           echo "SHORT_UID=$SHORT_UID" >> $GITHUB_ENV
           git checkout -b file-changed-${{ env.TAG }}-$SHORT_UID
 
+      - name: Download Helm artifact directly into the component directory
+        uses: actions/download-artifact@v4
+        with:
+          name: helm
+          path: .          
+
       - name: Commit and push changes
+        if: env.CHANGED == 'true'
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
@@ -61,6 +93,7 @@ jobs:
           git push origin file-changed-${{ env.TAG }}-${{ env.SHORT_UID }}
 
       - name: Create a pull request
+        if: env.CHANGED == 'true'
         run: |
           gh pr create --base main --head file-changed-${{ env.TAG }}-${{ env.SHORT_UID }} \
             --title "Update Tyk Operator CRD for version file-changed-${{ env.TAG }}-${{ env.SHORT_UID }}" \

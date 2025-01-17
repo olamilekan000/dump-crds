@@ -687,3 +687,23 @@ webhooks:
     resources:
     - apidefinitions
   sideEffects: None
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-pod
+  labels:
+    app: busybox
+spec:
+  containers:
+  - name: busybox-container
+    image: busybox:latest
+    command:
+    - sh
+    - -c
+    - "echo Hello, Kubernetes! && sleep 3600"
+    resources:
+      limits:
+        memory: "64Mi"
+        cpu: "250m"
+  restartPolicy: Always

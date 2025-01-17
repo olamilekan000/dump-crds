@@ -20,14 +20,20 @@ jobs:
           fetch-depth: 0
 
       - name: Check for Changes in helm/crd/all.yaml
-        id: check_changes
+        id: get_source_branch
         run: |
-          git fetch origin master
-          if git --no-pager log -n 1 --name-only --pretty=format: | grep -q "helm/crd/all.yaml"; then
-            echo "CHANGED=true" >> $GITHUB_ENV
-          else
-            echo "CHANGED=false" >> $GITHUB_ENV
+          if [[ $GITHUB_EVENT_NAME == "pull_request" ]]; then
+            # For PR event, we can directly use the source branch
+            echo "SOURCE_BRANCH=${{ github.head_ref }}" >> $GITHUB_ENV
+          elif [[ $GITHUB_EVENT_NAME == "push" ]]; then
+            # For push event (merge), get the merge commit and extract the source branch
+            # Find the merge commit hash
+            MERGE_COMMIT=$(git log -1 --merges --pretty=%H)
+            # Extract the source branch from the merge commit message and trim repository name
+            SOURCE_BRANCH=$(git show -s --pretty=%B $MERGE_COMMIT | grep -oP '(?<=from )\S+' | sed 's/^[^/]*\///')
+            echo "SOURCE_BRANCH=${SOURCE_BRANCH}" >> $GITHUB_ENV
           fi
+          echo "Source branch is: $SOURCE_BRANCH"          
 
   process-changes:
     needs: check-specific-file

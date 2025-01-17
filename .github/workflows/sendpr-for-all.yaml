@@ -46,11 +46,13 @@ jobs:
           fi
 
       - name: Copy Helm chart to a temporary directory
+        if: env.CHANGED == 'true'
         run: |
           mkdir -p /tmp/helm
           cp -r "${GITHUB_WORKSPACE}/helm/crd/all.yaml"* /tmp/helm        
 
       - name: Upload Helm Chart
+        if: env.CHANGED == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: helm

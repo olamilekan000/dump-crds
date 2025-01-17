@@ -25,7 +25,7 @@ jobs:
         id: check_changes
         run: |
           git fetch origin master
-          if git diff --name-only origin/master | grep -q "helm/crd/all.yaml"; then
+          if git --no-pager diff add-workspace..origin/master --name-only| grep -q "helm/crd/all.yaml"; then
             echo "File helm/crd/all.yaml was changed."
             echo "CHANGED=true" >> $GITHUB_ENV
           else

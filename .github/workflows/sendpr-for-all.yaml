@@ -49,7 +49,8 @@ jobs:
         if: env.CHANGED == 'true'
         run: |
           mkdir -p /tmp/helm
-          cp -r "${GITHUB_WORKSPACE}/helm/crd/all.yaml"* /tmp/helm        
+          cp -r "${GITHUB_WORKSPACE}/helm/crd/all.yaml" /tmp/helm/charts-all.yaml
+      
 
       - name: Upload Helm Chart
         if: env.CHANGED == 'true'

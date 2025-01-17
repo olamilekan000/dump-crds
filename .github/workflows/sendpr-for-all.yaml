@@ -12,9 +12,6 @@ jobs:
   check-specific-file:
     runs-on: ubuntu-latest
 
-    outputs:
-      changed: ${{ steps.check_changes.outputs.changed }}
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -39,16 +36,28 @@ jobs:
           git fetch origin ${{ env.SOURCE_BRANCH }}
           if git --no-pager log -n 1 origin/${{ env.SOURCE_BRANCH }} --name-only --pretty=format: | grep -q "helm/crd/all.yaml"; then
             echo "File helm/crd/all.yaml was changed."
-            echo "::set-output name=changed::true"
+            echo "CHANGED=true" >> $GITHUB_ENV
           else
             echo "No changes in helm/crd/all.yaml."
-            echo "::set-output name=changed::false"
-          fi
+            echo "CHANGED=false" >> $GITHUB_ENV
+
+      - name: Copy Helm Chart
+        if: ${{ env.CHANGED == 'true' }}
+        run: |
+          mkdir -p /tmp/helm
+          cp -r "${GITHUB_WORKSPACE}/helm/crd/all.yaml" /tmp/helm/charts-all.yaml
+
+      - name: Upload Helm Chart
+        if: ${{ env.CHANGED == 'true' }}          
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm
+          path: /tmp/helm          
 
   process-changes:
-    needs: check-specific-file
     runs-on: ubuntu-latest
-    if: needs.check-specific-file.outputs.changed == 'true'
+    needs: check-specific-file
+    if: needs.check-specific-file.outputs.CHANGED == 'true'
 
     steps:
       - name: Checkout other repository
@@ -56,17 +65,6 @@ jobs:
         with: 
           repository: olamilekan000/leased-based-le
           token: ${{ secrets.PAT }}
-
-      - name: Copy Helm chart to a temporary directory
-        run: |
-          mkdir -p /tmp/helm
-          cp -r "${GITHUB_WORKSPACE}/helm/crd/all.yaml" /tmp/helm/charts-all.yaml
-
-      - name: Upload Helm Chart
-        uses: actions/upload-artifact@v4
-        with:
-          name: helm
-          path: /tmp/helm
 
       - name: Create and checkout new branch
         run: |

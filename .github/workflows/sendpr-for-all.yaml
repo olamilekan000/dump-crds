@@ -8,6 +8,9 @@ on:
     branches:
       - master
 
+env:
+  CHANGED: false
+
 jobs:
   check-specific-file:
     runs-on: ubuntu-latest
@@ -19,15 +22,16 @@ jobs:
       - name: Check for Changes in helm/crd/all.yaml
         id: check_changes
         run: |
-          ls
-          git --no-pager diff --name-only 
-          git --no-pager diff --name-only | grep -q "helm/crd/all.yaml"
+          git --no-pager diff --name-only
           if git --no-pager diff --name-only | grep -q "helm/crd/all.yaml"; then
-            echo "changes=true" >> $GITHUB_ENV
+            echo "File helm/crd/all.yaml was changed."
+            echo "CHANGED=true" >> $GITHUB_ENV
           else
-            echo "changes=false" >> $GITHUB_ENV
-          fi
+            echo "No changes in helm/crd/all.yaml."
+            echo "CHANGED=false" >> $GITHUB_ENV
 
       - name: Print Message
-        if: env.changes == 'true'
-        run: echo "echooo"
+        if: env.CHANGED == 'true'
+        run: |
+          echo "echooo"
+          echo "${{ env.CHANGED }}"

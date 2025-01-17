@@ -45,34 +45,30 @@ jobs:
             echo "CHANGED=false" >> $GITHUB_ENV
           fi
 
-      - name: Copy Helm chart to a temporary directory
-        if: env.CHANGED == 'true'
-        run: |
-          mkdir -p /tmp/helm
-          cp -r "${GITHUB_WORKSPACE}/helm/crd/all.yaml" /tmp/helm/charts-all.yaml
-      
+  process-changes:
+    needs: check-specific-file
+    runs-on: ubuntu-latest
+    if: env.CHANGED == 'true'
 
-      - name: Upload Helm Chart
-        if: env.CHANGED == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: helm
-          path: /tmp/helm
-
-      - name: Print Message
-        if: env.CHANGED == 'true'
-        run: |
-          echo "Changes detected in helm/crd/all.yaml"
-
+    steps:
       - name: Checkout other repository
-        if: env.CHANGED == 'true'
         uses: actions/checkout@v4
         with: 
           repository: olamilekan000/leased-based-le
           token: ${{ secrets.PAT }}
 
+      - name: Copy Helm chart to a temporary directory
+        run: |
+          mkdir -p /tmp/helm
+          cp -r "${GITHUB_WORKSPACE}/helm/crd/all.yaml" /tmp/helm/charts-all.yaml
+
+      - name: Upload Helm Chart
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm
+          path: /tmp/helm
+
       - name: Create and checkout new branch
-        if: env.CHANGED == 'true'
         run: |
           SHORT_UID=$(uuidgen | cut -c1-8)
           echo "SHORT_UID=$SHORT_UID" >> $GITHUB_ENV
@@ -80,13 +76,11 @@ jobs:
 
       - name: Download Helm artifact directly into the component directory
         uses: actions/download-artifact@v4
-        if: env.CHANGED == 'true'
         with:
           name: helm
-          path: .          
+          path: .
 
       - name: Commit and push changes
-        if: env.CHANGED == 'true'
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
@@ -95,7 +89,6 @@ jobs:
           git push origin file-changed-${{ env.TAG }}-${{ env.SHORT_UID }}
 
       - name: Create a pull request
-        if: env.CHANGED == 'true'
         run: |
           gh pr create --base master --head file-changed-${{ env.TAG }}-${{ env.SHORT_UID }} \
             --title "Update Tyk Operator CRD for version file-changed-${{ env.TAG }}-${{ env.SHORT_UID }}" \

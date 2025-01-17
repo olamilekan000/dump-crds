@@ -45,6 +45,17 @@ jobs:
             echo "CHANGED=false" >> $GITHUB_ENV
           fi
 
+      - name: Copy Helm chart to a temporary directory
+        run: |
+          mkdir -p /tmp/helm
+          cp -r "${GITHUB_WORKSPACE}/helm/crd/all.yaml"* /tmp/helm        
+
+      - name: Upload Helm Chart
+        uses: actions/upload-artifact@v4
+        with:
+          name: helm
+          path: /tmp/helm
+
       - name: Print Message
         if: env.CHANGED == 'true'
         run: |
@@ -63,6 +74,12 @@ jobs:
           SHORT_UID=$(uuidgen | cut -c1-8)
           echo "SHORT_UID=$SHORT_UID" >> $GITHUB_ENV
           git checkout -b file-changed-${{ env.TAG }}-$SHORT_UID
+
+      - name: Download Helm artifact directly into the component directory
+        uses: actions/download-artifact@v4
+        with:
+          name: helm
+          path: .          
 
       - name: Commit and push changes
         if: env.CHANGED == 'true'

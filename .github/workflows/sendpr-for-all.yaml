@@ -12,7 +12,7 @@ jobs:
   check-specific-file:
     runs-on: ubuntu-latest
     outputs:
-      changed: ${{ steps.check_changes.outputs.changed }}
+      CHANGED: ${{ steps.check_changes.outputs.CHANGED }}
 
     steps:
       - name: Checkout Code
@@ -26,28 +26,32 @@ jobs:
           if [[ $GITHUB_EVENT_NAME == "pull_request" ]]; then
             echo "SOURCE_BRANCH=${{ github.head_ref }}" >> $GITHUB_ENV
           elif [[ $GITHUB_EVENT_NAME == "push" ]]; then
-            echo "SOURCE_BRANCH=${{ github.ref_name }}" >> $GITHUB_ENV
+            MERGE_COMMIT=$(git log -1 --merges --pretty=%H)
+            SOURCE_BRANCH=$(git show -s --pretty=%B $MERGE_COMMIT | grep -oP '(?<=from )\S+' | sed 's/^[^/]*\///')
+            echo "SOURCE_BRANCH=${SOURCE_BRANCH}" >> $GITHUB_ENV
           fi
 
       - name: Check for Changes in helm/crd/all.yaml
         id: check_changes
         run: |
-          echo "Checking for changes in helm/crd/all.yaml"
+          echo "Checking for changes between ${{ env.SOURCE_BRANCH }} and master"
           git fetch origin ${{ env.SOURCE_BRANCH }}
           if git --no-pager log -n 1 origin/${{ env.SOURCE_BRANCH }} --name-only --pretty=format: | grep -q "helm/crd/all.yaml"; then
-            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "File helm/crd/all.yaml was changed."
+            echo "CHANGED=true" >> $GITHUB_OUTPUT
           else
-            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "No changes in helm/crd/all.yaml."
+            echo "CHANGED=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Copy Helm Chart
-        if: ${{ steps.check_changes.outputs.changed == 'true' }}
+        if: ${{ steps.check_changes.outputs.CHANGED == 'true' }}
         run: |
           mkdir -p /tmp/helm
           cp "${GITHUB_WORKSPACE}/helm/crd/all.yaml" /tmp/helm/charts-all.yaml
 
       - name: Upload Helm Chart
-        if: ${{ steps.check_changes.outputs.changed == 'true' }}
+        if: ${{ steps.check_changes.outputs.CHANGED == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: helm
@@ -56,7 +60,7 @@ jobs:
   process-changes:
     needs: check-specific-file
     runs-on: ubuntu-latest
-    if: ${{ needs.check-specific-file.outputs.changed == 'true' }}
+    if: ${{ needs.check-specific-file.outputs.CHANGED == 'true' }}
     permissions:
       contents: write
       pull-requests: write

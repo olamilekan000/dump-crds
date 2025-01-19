@@ -29,9 +29,9 @@ jobs:
           fi
 
           if [[ "$SOURCE_BRANCH" == *release* ]]; then
-              echo "Branch contains 'release', exiting pipeline."
-              exit 0
-            fi          
+            echo "Branch contains 'release', exiting pipeline."
+            exit 0
+          fi          
 
       - name: Check for Changes in helm/crd/all.yaml
         id: check_changes

@@ -28,6 +28,11 @@ jobs:
             echo "SOURCE_BRANCH=${SOURCE_BRANCH}" >> $GITHUB_ENV
           fi
 
+          if [[ "$SOURCE_BRANCH" == *release* ]]; then
+              echo "Branch contains 'release', exiting pipeline."
+              exit 0
+            fi          
+
       - name: Check for Changes in helm/crd/all.yaml
         id: check_changes
         run: |
